@@ -248,3 +248,121 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         print("All tests passed ✓")
+
+
+# ─── NetherBrain Adapter ─────────────────────────────────────────────────────
+
+def test_netherbrain_mmkr_event_to_netherbrain():
+    """mmkr_event_to_netherbrain() maps all core event types correctly."""
+    from integrations.netherbrain_adapter import mmkr_event_to_netherbrain, NetherBrainEvent, EventType
+
+    test_events = [
+        {"ts": "2026-03-07T00:00:00Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "tool_call", "tool": "save_memory", "outcome": "success"},
+        {"ts": "2026-03-07T00:00:01Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "tool_result", "tool": "save_memory", "result": "saved",
+         "outcome": "success"},
+        {"ts": "2026-03-07T00:00:02Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "tick_start", "outcome": "success"},
+        {"ts": "2026-03-07T00:00:03Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "tick_complete", "outcome": "success"},
+        {"ts": "2026-03-07T00:00:04Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "action", "summary": "Did something", "outcome": "success"},
+        {"ts": "2026-03-07T00:00:05Z", "agent_id": "test", "session_id": "sess_t",
+         "tick": 1, "event_type": "error", "message": "oops", "outcome": "fail"},
+    ]
+
+    mapped_types = []
+    for e in test_events:
+        nb_event = mmkr_event_to_netherbrain(e)
+        if nb_event is not None:
+            assert isinstance(nb_event, NetherBrainEvent)
+            assert nb_event.session_id == "sess_t"
+            assert nb_event.type in (EventType.TEXT, EventType.METADATA,
+                                     EventType.TOOL_CALL, EventType.TOOL_RETURN,
+                                     EventType.ERROR, EventType.DONE)
+            mapped_types.append(nb_event.type)
+
+    assert len(mapped_types) >= 5, f"Expected >=5 mapped events, got {len(mapped_types)}"
+    print(f"  ✓ netherbrain mapping: {len(mapped_types)} events mapped → types: {set(mapped_types)}")
+
+
+def test_netherbrain_convert_trace():
+    """convert_trace_to_netherbrain() round-trips a .trace.jsonl file."""
+    import tempfile
+    from integrations.netherbrain_adapter import convert_trace_to_netherbrain, group_by_conversation
+
+    fixture = [
+        {"ts": "2026-03-07T00:00:00Z", "agent_id": "test", "session_id": "sess_a",
+         "tick": 1, "event_type": "tick_start", "outcome": "success"},
+        {"ts": "2026-03-07T00:00:30Z", "agent_id": "test", "session_id": "sess_a",
+         "tick": 1, "event_type": "tool_call", "tool": "load_memories", "outcome": "success"},
+        {"ts": "2026-03-07T00:01:00Z", "agent_id": "test", "session_id": "sess_a",
+         "tick": 1, "event_type": "action", "summary": "Loaded memories", "outcome": "success"},
+        {"ts": "2026-03-07T00:02:00Z", "agent_id": "test", "session_id": "sess_a",
+         "tick": 1, "event_type": "tick_complete", "outcome": "success"},
+    ]
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".trace.jsonl", delete=False) as f:
+        for e in fixture:
+            f.write(json.dumps(e) + "\n")
+        path = f.name
+
+    events = convert_trace_to_netherbrain(path)
+    assert len(events) > 0, "Expected at least 1 NetherBrain event"
+
+    # Verify structure
+    for e in events:
+        assert hasattr(e, "type")
+        assert hasattr(e, "session_id")
+        assert hasattr(e, "content")
+
+    # Group by conversation
+    groups = group_by_conversation(events)
+    assert "sess_a" in groups, f"Expected session 'sess_a' in groups, got: {list(groups.keys())}"
+
+    print(f"  ✓ netherbrain convert: {len(events)} events, {len(groups)} conversation(s)")
+
+
+def test_netherbrain_sse_serialization():
+    """NetherBrainEvent.to_sse_line() produces valid SSE format."""
+    from integrations.netherbrain_adapter import NetherBrainEvent, EventType
+
+    event = NetherBrainEvent(
+        type=EventType.TEXT,
+        session_id="sess_test",
+        content="Tick 38 complete: shipped netherbrain tests",
+        metadata={"tick": 38},
+    )
+
+    sse = event.to_sse_line()
+    assert sse.startswith("data: "), f"SSE should start with 'data: ', got: {sse[:20]}"
+
+    # Parse the JSON payload
+    payload = json.loads(sse[6:])
+    assert payload["type"] == EventType.TEXT
+    assert payload["session_id"] == "sess_test"
+    assert "tick" in payload.get("metadata", {})
+
+    print(f"  ✓ netherbrain SSE: valid format, payload={list(payload.keys())}")
+
+
+
+def _run_netherbrain_tests():
+    """Run NetherBrain adapter tests."""
+    tests = [
+        test_netherbrain_mmkr_event_to_netherbrain,
+        test_netherbrain_convert_trace,
+        test_netherbrain_sse_serialization,
+    ]
+    passed = 0
+    failed = 0
+    for t in tests:
+        try:
+            t()
+            passed += 1
+        except Exception as e:
+            print(f"  ✗ {t.__name__}: {e}")
+            failed += 1
+    return passed, failed
+
