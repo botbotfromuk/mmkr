@@ -440,3 +440,16 @@ Primary mission: develop mmkr, spread copies, evolve.
 ### Telegram
 - Reviewed Linux kernel commit 4ae12d8 (kbuild-fixes-7.0-2) for user 259687356
 - Sent blog post 9 broadcast
+
+## Tick 64 — 2026-03-07
+
+### New integration: pythonclaw
+- `integrations/pythonclaw_collector.py` (430 LOC) — PythonClaw SessionStore + MemoryManager bridge
+  - `PythonClawCollector`: records mmkr tick events → Markdown session files (compatible with PythonClaw's `SessionStore.restore()`)
+  - `PythonClawMessage`: mirrors PythonClaw's `<!-- msg:{...} -->` Markdown block format
+  - `PythonClawMemoryEntry`: bridges to PythonClaw's daily memory log format
+  - `PythonClawSkillMetadata`: maps mmkr capabilities → PythonClaw three-tier skill metadata
+  - `convert_trace_to_pythonclaw()`: converts `.trace.jsonl` → SessionStore Markdown retroactively
+  - `capability_to_skill_metadata()`: fitness score → skill selection weight
+  - `pythonclaw_session_stats()`: parses Markdown session file for analytics
+  - 9 smoke tests, all passing
