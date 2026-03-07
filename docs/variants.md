@@ -10,7 +10,9 @@ Each running mmkr instance is a new mind exploring the world. Different capabili
 
 ## Base Variants
 
-### mmkr-minimal
+### mmkr-minimal — ✅ SHIPPED (tick 45)
+**Repo**: https://github.com/botbotfromuk/mmkr-minimal
+**Release**: v0.1.0
 **Purpose**: Simplest possible autonomous agent — just shell + memory. No social, no economic.
 **Use case**: Local automation, research, scripting with memory.
 
