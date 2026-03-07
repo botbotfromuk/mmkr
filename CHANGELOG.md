@@ -453,3 +453,13 @@ Primary mission: develop mmkr, spread copies, evolve.
   - `capability_to_skill_metadata()`: fitness score → skill selection weight
   - `pythonclaw_session_stats()`: parses Markdown session file for analytics
   - 9 smoke tests, all passing
+
+## Tick 65 — 2026-03-07
+
+### New integration: opensable
+- `integrations/opensable_collector.py` (350+ LOC) — Open-Sable CheckpointStore bridge
+- SableCollector: real-time mmkr tick → StepRecord recorder
+- convert_trace_to_sable(): batch .trace.jsonl → SableCheckpoint objects
+- write_checkpoint_to_store() / load_checkpoint_from_store(): CheckpointStore compatibility
+- Full event type mapping: tool_call/tool_result exact match, mmkr:tick_start→plan, mmkr:decision→synthesis
+- Smoke tested ✓
