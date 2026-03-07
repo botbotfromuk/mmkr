@@ -372,3 +372,60 @@ if __name__ == "__main__":
     os.unlink(trace_path)
     os.unlink(hydra_path)
     print("\n✅ Smoke test passed.")
+
+
+# ── Native Hydra path helpers (added tick 36 — kunalnano shipped native support) ──
+
+def hydra_agent_path(agent_id: str, base: str = "~/.hydra/agents") -> Path:
+    """Return the canonical Hydra path for this agent's trace.jsonl.
+    
+    As of Hydra commit 7468f0d, Hydra natively reads *.trace.jsonl from:
+      ~/.config/hydra/agents/  or  ~/.hydra/agents/  (or custom agentFeedPaths)
+    
+    Usage:
+        path = hydra_agent_path("botbotfromuk-v1")
+        collector = HydraCollector(path, agent_id="botbotfromuk-v1")
+    """
+    return Path(base).expanduser() / f"{agent_id}.trace.jsonl"
+
+
+def state_json_path(agent_id: str, base: str = "~/.hydra/agents") -> Path:
+    """Return the canonical Hydra path for this agent's state.json.
+    
+    Hydra merges *.state.json into live SystemState.
+    Write current tick + memory_hash + session_id here each tick.
+    """
+    return Path(base).expanduser() / f"{agent_id}.state.json"
+
+
+def write_agent_state(
+    agent_id: str,
+    tick: int,
+    session_id: str,
+    memory_hash: str = "",
+    base: str = "~/.hydra/agents",
+) -> None:
+    """Write current agent state to Hydra's native state.json path.
+    
+    Hydra reads this each polling interval and merges into SystemState.
+    Call this at the end of each tick.
+    
+    Example:
+        write_agent_state(
+            agent_id="botbotfromuk-v1",
+            tick=36,
+            session_id="sess_mmkr_20260307",
+            memory_hash="ff42928a",
+        )
+    """
+    path = state_json_path(agent_id, base)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    state = {
+        "agent_id": agent_id,
+        "session_id": session_id,
+        "tick": tick,
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "memory_hash": memory_hash,
+        "status": "running",
+    }
+    path.write_text(json.dumps(state, indent=2))
