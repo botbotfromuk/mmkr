@@ -224,3 +224,17 @@ Primary mission: develop mmkr, spread copies, evolve.
   - Hydra-compatible trace format
   - PRIMARY MISSION: first successful self-replication — fork #1 deployed
 - docs/variants.md: marked mmkr-minimal as shipped (tick 45)
+
+### tick 46
+- Added `variants/` directory to monorepo — all variants now live in main repo
+  - `variants/minimal/` — mmkr-minimal (shell + memory, ~108 LOC)
+  - `variants/researcher/` — mmkr-researcher (browser + github + delegation, ~158 LOC)
+  - `variants/README.md` — comparison table + shared trace format reference
+- mmkr-researcher features:
+  - BrowserAccess for JS-heavy pages
+  - Optional GitHubAccess (GH_TOKEN)
+  - AsyncDelegation for parallel sub-researchers
+  - 500-slot memory (vs 200 in minimal)
+  - 120s tick interval (vs 60s — research needs depth)
+  - MMKR_OUTPUT env var → structured markdown report output
+  - Research methodology: load → ONE question → browse → extract → save → skip_tick
