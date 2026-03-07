@@ -218,6 +218,102 @@ def test_trace_schema_required_fields():
 
 # ─── Runner ──────────────────────────────────────────────────────────────────
 
+
+
+def test_kalibr_collector_records_outcome():
+    """KalibrCollector records events with correct outcome mapping."""
+    import time, tempfile
+    from integrations.kalibr_collector import KalibrCollector
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        collector = KalibrCollector(
+            agent_id="test-agent",
+            output_path=Path(tmpdir) / "kalibr.jsonl",
+        )
+        
+        with collector.tick_context(tick=1, goal="test goal"):
+            collector.record_tool_call("test_tool", {"key": "value"}, result="ok")
+            event = collector.record_outcome(
+                path="github_engagement",
+                success=True,
+                path_score=0.85,
+            )
+        
+        assert event.outcome == "success", f"Expected success, got {event.outcome}"
+        assert event.path_name == "github_engagement"
+        assert event.path_score == 0.85
+        assert len(event.tool_calls) == 1
+        assert event.tool_calls[0]["tool"] == "test_tool"
+        
+        payload = event.to_kalibr_payload()
+        assert payload["success"] is True
+        assert payload["path"] == "github_engagement"
+        assert "mmkr_capability_fitness" in payload["metadata"]
+        
+        print("  ✓ kalibr collector records outcome correctly")
+
+
+def test_kalibr_router_selects_best_path():
+    """KalibrRouter selects highest-fitness path in exploit mode."""
+    from integrations.kalibr_collector import KalibrRouter
+    import random
+    random.seed(42)  # deterministic (seed 42 → exploit, not explore at 10%)
+    
+    router = KalibrRouter(
+        goal="build something",
+        paths={
+            "path_a": lambda: "a",
+            "path_b": lambda: "b",
+            "path_c": lambda: "c",
+        },
+        success_when=lambda r: bool(r),
+        fitness_scores={"path_a": 0.3, "path_b": 0.9, "path_c": 0.5},
+    )
+    
+    # Run 10 selections and check most are path_b (highest fitness)
+    selected = []
+    for i in range(10):
+        name, fn = router.select(tick=i)
+        selected.append(name)
+    
+    # path_b should dominate (exploration_rate=0.1 → ~90% exploitation)
+    path_b_count = selected.count("path_b")
+    assert path_b_count >= 7, f"Expected path_b dominant, got {selected}"
+    
+    print(f"  ✓ kalibr router selects best path ({path_b_count}/10 → path_b)")
+
+
+def test_kalibr_convert_trace():
+    """convert_trace_to_kalibr converts mmkr JSONL → KalibrTelemetryEvents."""
+    import time, tempfile, json
+    from integrations.kalibr_collector import convert_trace_to_kalibr, kalibr_session_stats
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        trace = Path(tmpdir) / "session.trace.jsonl"
+        trace.write_text(
+            json.dumps({"event_type": "tool_call", "tick": 1, "timestamp": time.time(),
+                        "metadata": {"tool": "safe_post_issue", "args": {"repo": "test/repo"}}}) + "\n" +
+            json.dumps({"event_type": "tool_result", "tick": 1, "timestamp": time.time(),
+                        "metadata": {"tool": "safe_post_issue", "result": "ok"}}) + "\n" +
+            json.dumps({"event_type": "mmkr:tick_end", "tick": 1, "timestamp": time.time(),
+                        "metadata": {"summary": "Posted issue to test/repo", "goal": "social"}}) + "\n"
+        )
+        
+        events = convert_trace_to_kalibr(trace, agent_id="mmkr-test")
+        assert len(events) == 3, f"Expected 3 events, got {len(events)}"
+        
+        # Last event = tick_end → success
+        tick_end = [e for e in events if e.path_name == "tick"]
+        assert len(tick_end) == 1
+        assert tick_end[0].outcome == "success"
+        
+        stats = kalibr_session_stats(events)
+        assert "success_rate" in stats
+        assert "path_breakdown" in stats
+        assert "safe_post_issue" in stats["path_breakdown"]
+        
+        print(f"  ✓ kalibr trace conversion: {len(events)} events, rate={stats['success_rate']:.0%}")
+
 if __name__ == "__main__":
     tests = [
         ("hydra ingest from fixture", test_hydra_ingest_from_fixture),
@@ -226,6 +322,9 @@ if __name__ == "__main__":
         ("slopometry convert trace", test_slopometry_convert_trace),
         ("slopometry collector emits", test_slopometry_collector_emits),
         ("trace schema required fields", test_trace_schema_required_fields),
+        ("kalibr collector records outcome", test_kalibr_collector_records_outcome),
+        ("kalibr router selects best path", test_kalibr_router_selects_best_path),
+        ("kalibr convert trace", test_kalibr_convert_trace),
     ]
 
     passed = 0
@@ -510,3 +609,6 @@ def _run_syke_and_verify_tests():
             traceback.print_exc()
             failed += 1
     return passed, failed
+
+
+# ── Kalibr tests ─────────────────────────────────────────────────────────────
