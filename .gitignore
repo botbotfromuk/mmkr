@@ -1,0 +1,23 @@
+# credentials — NEVER commit
+.env
+*.key
+*.pem
+secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Agent data
+/agent-data/
+.data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
