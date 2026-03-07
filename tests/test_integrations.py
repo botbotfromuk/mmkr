@@ -366,3 +366,149 @@ def _run_netherbrain_tests():
             failed += 1
     return passed, failed
 
+
+
+# ── Syke Adapter ───────────────────────────────────────────────────────────────
+
+def test_syke_read_memory_events():
+    """read_memory_events() reads a .memories.json dict and emits SykeEvents."""
+    from integrations.syke_adapter import read_memory_events, SykeEvent
+    import json, tempfile
+
+    memories_data = {
+        "tick_outcome": [
+            {"content": "Tick 39 — Built integration docs.", "created_at": "2026-03-07T04:15:00Z"}
+        ],
+        "primary_mission": [
+            {"content": "PRIMARY MISSION: develop mmkr, spread copies.", "created_at": "2026-03-07T01:00:00Z"}
+        ],
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(memories_data, f)
+        path = f.name
+
+    events = list(read_memory_events(memories_path=path))
+    assert len(events) >= 2
+    for ev in events:
+        assert ev.source in ("mmkr-memory", "mmkr")
+        assert ev.content
+        assert ev.timestamp
+
+    print(f"  ✓ syke read_memory_events: {len(events)} events from 2 categories")
+
+
+def test_syke_read_trace_events():
+    """read_trace_events() aggregates .trace.jsonl by tick into SykeEvents."""
+    from integrations.syke_adapter import read_trace_events
+    import json, tempfile
+
+    trace_events = [
+        {"ts": "2026-03-07T04:00:00Z", "agent_id": "test", "session_id": "sess_test",
+         "tick": 1, "event_type": "tool_call", "tool": "save_memory", "outcome": "success"},
+        {"ts": "2026-03-07T04:00:30Z", "agent_id": "test", "session_id": "sess_test",
+         "tick": 1, "event_type": "tick_complete", "outcome": "success"},
+        {"ts": "2026-03-07T04:01:00Z", "agent_id": "test", "session_id": "sess_test",
+         "tick": 2, "event_type": "tool_call", "tool": "Bash", "outcome": "success"},
+    ]
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".trace.jsonl", delete=False) as f:
+        for ev in trace_events:
+            f.write(json.dumps(ev) + "\n")
+        path = f.name
+
+    events = list(read_trace_events(trace_path=path))
+    # Should have 2 events (one per tick)
+    assert len(events) >= 1
+    ticks = {int(ev.metadata.get("tick", 0)) for ev in events}
+    assert 1 in ticks and 2 in ticks
+
+    print(f"  ✓ syke read_trace_events: {len(events)} tick-aggregated events")
+
+
+def test_syke_events_to_json():
+    """events_to_syke_json() produces valid JSON array."""
+    from integrations.syke_adapter import read_mmkr_events, events_to_syke_json, read_trace_events
+    import json, tempfile
+
+    memories_data = {"test": [{"content": "Test memory.", "created_at": "2026-03-07T04:00:00Z"}]}
+    trace_events = [
+        {"ts": "2026-03-07T04:00:00Z", "agent_id": "test", "session_id": "s",
+         "tick": 1, "event_type": "tick_complete", "outcome": "success"},
+    ]
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as mf:
+        json.dump(memories_data, mf)
+        mem_path = mf.name
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".trace.jsonl", delete=False) as tf:
+        for ev in trace_events:
+            tf.write(json.dumps(ev) + "\n")
+        trace_path = tf.name
+
+    import os; os.environ["_SYKE_TEST_MEM"] = mem_path; events = list(read_mmkr_events(data_dir=os.path.dirname(trace_path), trace_path=trace_path))
+    output = events_to_syke_json(events)
+    parsed = json.loads(output)
+    assert isinstance(parsed, list)
+    assert len(parsed) >= 1
+    for item in parsed:
+        assert "source" in item
+        assert "content" in item
+
+    print(f"  ✓ syke events_to_syke_json: {len(parsed)} events, valid JSON")
+
+
+# ── mmkr_verify ─────────────────────────────────────────────────────────────────
+
+def test_verify_generate_and_verify():
+    """generate_proof() + verify_proof() round-trip."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from mmkr_verify import generate_proof, verify_proof
+    import tempfile, pathlib
+
+    # Generate proof with temp data dir
+    with tempfile.TemporaryDirectory() as tmpdir:
+        data_dir = pathlib.Path(tmpdir)
+        (data_dir / "memories.json").write_text('{"test": [{"content": "hello"}]}')
+
+        proof = generate_proof(
+            agent_id="test-agent",
+            session_id="sess_test",
+            tick=1,
+            wallet_address="0x0000",
+            data_dir=data_dir,
+        )
+
+        assert proof.agent_id == "test-agent"
+        assert proof.tick == 1
+        assert proof.memory_hash != ""
+        assert proof.signature != ""
+
+        # Verify it
+        proof_dict = vars(proof)  # include all fields including proof_generated_at
+        valid, reason = verify_proof(proof_dict)
+        assert valid, f"Proof invalid: {reason}"
+
+    print(f"  ✓ mmkr_verify: generate + verify round-trip OK")
+
+
+def _run_syke_and_verify_tests():
+    tests = [
+        test_syke_read_memory_events,
+        test_syke_read_trace_events,
+        test_syke_events_to_json,
+        test_verify_generate_and_verify,
+    ]
+    passed = 0
+    failed = 0
+    for t in tests:
+        try:
+            t()
+            passed += 1
+        except Exception as e:
+            import traceback
+            print(f"  ✗ {t.__name__}: {e}")
+            traceback.print_exc()
+            failed += 1
+    return passed, failed
