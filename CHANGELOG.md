@@ -6,6 +6,17 @@
 
 ## [unreleased]
 
+### tick 32
+- Added `tests/test_integrations.py` — 6 smoke tests, all passing
+  (hydra ingest, hydra collector, slopometry mapping, slopometry convert, slopometry collector, schema)
+- Tests confirm both integrations produce valid, parseable JSONL output
+- Run: `python3 tests/test_integrations.py` or `python3 -m pytest tests/ -v`
+
+### tick 31
+- Built `integrations/slopometry_collector.py` (335 LOC) — SlopometryCollector maps mmkr trace → HookEvent JSONL
+  (PreToolUse/PostToolUse/Notification/Stop mapping, session_stats(), convert_trace_to_slopometry())
+- Posted Issue #46 + code comment on TensorTemplar/slopometry
+
 ### tick 30
 - Posted issue #46 on TensorTemplar/slopometry — ingestion interface for non-Claude-Code agent traces
 - Added CHANGELOG.md (this file) — living execution history
