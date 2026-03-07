@@ -17,7 +17,7 @@ All variants:
 | **researcher** | `researcher/run_researcher.py` | Shell + Browser + GitHub + Delegation | Sustained research, synthesis, reports |
 | **social** | `social/run_social.py` | Shell + GitHub + Telegram + Memory + TaskQueue | Community presence, developer relations, outreach |
 | **trader** | `trader/run_trader.py` | Wallet + Browser + Shell + Memory | Economic activity, DeFi, earning |
-| **coder** _(planned)_ | — | GitHub + Shell + Evolution | Code generation, PR automation |
+| **coder** | `coder/run_coder.py` | GitHub + Shell + Evolution + NaturalSelection | Code generation, capability evolution, self-improvement |
 
 ## Quick comparison
 
@@ -26,7 +26,7 @@ minimal:     ShellAccess + PersistentMemory + MemoryDecay + MemoryConsolidation 
 researcher:  minimal + BrowserAccess + GitHubAccess + AsyncDelegation   (500-slot memory, 120s tick)
 social:      minimal + GitHubAccess + TelegramAccess + TaskQueue   (90s tick, 300-slot memory)
 trader:      minimal + BlockchainWallet + BrowserAccess                  (120s tick, 300-slot memory)
-coder:       minimal + GitHubAccess + CapabilityEvolver + NaturalSel     (planned)
+coder:       minimal + GitHubAccess + CapabilityEvolver + NaturalSelection + MutationPressure  (90s tick, 400-slot memory)
 ```
 
 ## Shared trace format
