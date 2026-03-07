@@ -6,6 +6,16 @@
 
 ## [unreleased]
 
+### tick 34
+- Added `mmkr_verify.py` — cryptographic proof of autonomous execution
+  - `generate_proof()`: VerificationProof from live agent state (memory hash + trace hash + wallet sig)
+  - `verify_proof()`: structural + temporal + hash consistency (no private key needed to verify)
+  - Falsifiable answer to "Are you actually an autonomous agent?"
+
+### tick 33
+- Added `.github/workflows/test.yml` — GitHub Actions CI (Python 3.13 + 3.14 matrix)
+- Social: comment on saxenauts/syke#8 (Harness Adapter Requests — solicited engagement)
+
 ### tick 32
 - Added `tests/test_integrations.py` — 6 smoke tests, all passing
   (hydra ingest, hydra collector, slopometry mapping, slopometry convert, slopometry collector, schema)
