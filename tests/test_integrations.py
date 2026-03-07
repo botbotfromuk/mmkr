@@ -46,9 +46,10 @@ def test_hydra_ingest_from_fixture():
         path = f.name
 
     events = ingest_agent_trace(path)
-    assert len(events) == 4, f"Expected 4 events, got {len(events)}"
+    # tick_start is filtered (None mapping), so 3 events pass: tool_call, action, tick_complete
+    assert len(events) == 3, f"Expected 3 events (tick_start filtered), got {len(events)}"
 
-    # Verify structure: ingest_agent_trace returns normalized events with 'event' key (renamed from event_type)
+    # Verify structure
     for e in events:
         assert "ts" in e
         assert "tick" in e
@@ -57,42 +58,39 @@ def test_hydra_ingest_from_fixture():
     # group_by_tick produces one group per tick
     groups = group_by_tick(events)
     assert 1 in groups, "Expected tick 1 in groups"
-    assert len(groups[1]) == 4
+    assert len(groups[1]) == 3
 
-    print(f"  ✓ hydra ingest: {len(events)} events, {len(groups)} tick(s)")
+    print(f"  ✓ hydra ingest: {len(events)} events, {len(groups)} tick(s) (tick_start filtered per spec)")
 
 
 def test_hydra_collector_emits_valid_jsonl():
     """HydraCollector writes valid JSONL that can be re-parsed."""
     from integrations.hydra_ingestor import HydraCollector
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".hydra.jsonl", delete=False) as f:
-        path = f.name
+    with tempfile.TemporaryDirectory() as tmpdir:
+        collector = HydraCollector(
+            agent_id="test-agent",
+            session_id="sess_test",
+            feed_dir=tmpdir,
+        )
 
-    # HydraCollector uses named methods (not emit) — typed API
-    collector = HydraCollector(
-        path,
-        agent_id="test-agent",
-        session_id="sess_test",
-    )
+        collector.on_external_action(tick=1, tool="save_memory", target="memories",
+                                      outcome="success")
+        collector.on_checkpoint(tick=1, summary="Test checkpoint")
+        collector.on_tick_end(tick=1, summary="Test tick complete")
 
-    collector.phase_start(tick=1, name="observe")
-    collector.tool_call(tick=1, phase="act", tool_name="save_memory", args="{}")
-    collector.tool_result(tick=1, phase="act", tool_name="save_memory", result="ok")
-    collector.action(tick=1, action_type="memory_save", description="Test tick",
-                     tool_used="save_memory", succeeded=True, result="ok")
-    collector.close()
+        trace_path = Path(tmpdir) / "test-agent.trace.jsonl"
+        assert trace_path.exists(), "trace.jsonl not written"
+        lines = trace_path.read_text().strip().split("\n")
+        lines = [l for l in lines if l.strip()]
+        assert len(lines) >= 1, f"Expected at least 1 line, got {len(lines)}"
 
-    lines = Path(path).read_text().strip().split("\n")
-    lines = [l for l in lines if l.strip()]
-    assert len(lines) >= 1, f"Expected at least 1 line, got {len(lines)}"
+        for line in lines:
+            obj = json.loads(line)
+            assert "ts" in obj
+            assert "agent_id" in obj
 
-    for line in lines:
-        obj = json.loads(line)
-        assert "ts" in obj
-        assert "agent_id" in obj
-
-    print(f"  ✓ hydra collector: emitted {len(lines)} valid JSONL events")
+        print(f"  ✓ hydra collector: emitted {len(lines)} valid JSONL events")
 
 
 # ─── Slopometry Collector ────────────────────────────────────────────────────
