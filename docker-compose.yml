@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GH_TOKEN=${GH_TOKEN}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
+      - CREATOR_ID=${CREATOR_ID}
+      - WALLET_ADDRESS=${WALLET_ADDRESS:-}
+      - WALLET_PRIVATE_KEY=${WALLET_PRIVATE_KEY:-}
+      - WALLET_MNEMONIC=${WALLET_MNEMONIC:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+    volumes:
+      - ./agent-data:/app/.data
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
