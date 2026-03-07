@@ -418,3 +418,14 @@ Primary mission: develop mmkr, spread copies, evolve.
   - convert_trace_to_pythonclaw(): trace.jsonl → session Markdown
   - session_stats(): session analytics
   - All 4 smoke tests passing
+
+## Tick 62 — 2026-03-07
+
+### New integration: mind-mem
+- `integrations/mindmem_collector.py` (420 LOC) — mind-mem Memory OS adapter
+  - `MindMemCollector.memories_to_decisions()`: exports mmkr memories → D- blocks with ConstraintSignatures
+  - `MindMemCollector.goals_to_tasks()`: exports mmkr goals → T- blocks
+  - `MindMemCollector.trace_to_signals()`: exports trace → SIG-/INC-/DREF- blocks
+  - `MindMemCollector.audit_trail_for_query()`: BM25 scoring log for memory retrieval audit
+  - `convert_trace_to_mindmem()`: standalone trace converter
+  - Full SPEC.md compliance: block grammar, ConstraintSignatures, contradiction detection metadata
