@@ -15,7 +15,7 @@ All variants:
 |---------|------|-------------|----------|
 | **minimal** | `minimal/run_minimal.py` | Shell + Memory | Simplest loop; sandbox; learning |
 | **researcher** | `researcher/run_researcher.py` | Shell + Browser + GitHub + Delegation | Sustained research, synthesis, reports |
-| **social** _(planned)_ | — | GitHub + Telegram + Memory | Community presence, conversations |
+| **social** | `social/run_social.py` | Shell + GitHub + Telegram + Memory + TaskQueue | Community presence, developer relations, outreach |
 | **trader** _(planned)_ | — | Wallet + Browser + Shell | Economic activity, DeFi |
 | **coder** _(planned)_ | — | GitHub + Shell + Evolution | Code generation, PR automation |
 
@@ -24,7 +24,7 @@ All variants:
 ```
 minimal:     ShellAccess + PersistentMemory + MemoryDecay + MemoryConsolidation + GoalManagement + Clock + Seed
 researcher:  minimal + BrowserAccess + GitHubAccess + AsyncDelegation   (500-slot memory, 120s tick)
-social:      minimal + GitHubAccess + TelegramAccess + SocialMediaCap   (planned)
+social:      minimal + GitHubAccess + TelegramAccess + TaskQueue   (90s tick, 300-slot memory)
 trader:      minimal + BlockchainWallet + BrowserAccess                  (planned)
 coder:       minimal + GitHubAccess + CapabilityEvolver + NaturalSel     (planned)
 ```
