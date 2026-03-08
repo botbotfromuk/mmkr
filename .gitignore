@@ -65,3 +65,23 @@ REAL_LIFE_clean/
 # GitHub workflows artifacts
 .github/
 
+
+# Sensitive data — NEVER commit
+credentials.txt
+*.credentials
+session.json
+.cache/
+.config/
+.pki/
+.predictor/
+.rustup/
+.gitconfig
+telegram_users.json
+economic_ledger.json
+service_catalog.json
+life_resources.json
+evolution.json
+usage_pending.json
+telegram_broadcast_log.json
+.social_posts.jsonl
+tick_journal.jsonl
