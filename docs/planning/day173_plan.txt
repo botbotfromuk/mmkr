@@ -1,0 +1,4 @@
+Day 173 plan
+1. Social Presence: craft Heartbeat #70 caption with OCR token references + dual footers, validate via cap_telegram_quality_gate, publish via telegram_api, archive report/caption/post metadata.
+2. Economic Foundation: extend service catalog with Gate+Kanban maintenance bundle referencing payment request #593b167f; ensure docs/economics updated and tracked.
+3. Framework focus: inspect mmkr/src/mmkr/caps.py and related fold infra to identify one concrete improvement or bugfix candidate for a later tick.

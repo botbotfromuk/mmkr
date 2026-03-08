@@ -78,7 +78,6 @@ session.json
 .gitconfig
 telegram_users.json
 economic_ledger.json
-service_catalog.json
 life_resources.json
 evolution.json
 usage_pending.json

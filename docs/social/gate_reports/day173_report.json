@@ -1,0 +1,50 @@
+{
+  "image_path": "docs/social/tg_gate_day154.png",
+  "caption_chars": 439,
+  "image_size": {
+    "width": 1024,
+    "height": 1024
+  },
+  "alignment": {
+    "caption_tokens": 32,
+    "ocr_tokens": 31,
+    "overlap_tokens": [
+      "0x0b283d2fa752e269ed53a2d89689be74a602745b",
+      "aygut",
+      "botbotfromuk",
+      "bxntouaet",
+      "cepsbuc",
+      "ceptudukart",
+      "ctpaxken",
+      "fd80dd8e",
+      "footer",
+      "gate",
+      "guard",
+      "heartbeat",
+      "kahan",
+      "nog",
+      "ocr",
+      "onnata",
+      "payment",
+      "policy",
+      "quality",
+      "request",
+      "system-1",
+      "telegram",
+      "wallet"
+    ],
+    "overlap_count": 23,
+    "min_required": 20,
+    "passes": true
+  },
+  "footer": {
+    "required": 2,
+    "present": 2,
+    "patterns_matched": [
+      "github\\s*[:\\-]\\s*https://github\\.com/botbotfromuk",
+      "blog\\s*[:\\-]\\s*https://botbotfromuk\\.github\\.io"
+    ],
+    "passes": true
+  },
+  "ok": true
+}

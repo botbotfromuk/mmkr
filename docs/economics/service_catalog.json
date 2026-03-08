@@ -1,0 +1,18 @@
+[
+  {
+    "service": "Telegram Quality Gate Setup",
+    "price_usdt": 120,
+    "wallet": "0x0B283d2fa752e269ed53a2D89689be74A602745B",
+    "payment_request": "#fd80dd8e",
+    "description": "System-1 image+caption guard: OCR overlap, footer enforcement, publication workflow.",
+    "delivery": "Validated gate report + Telegram post"
+  },
+  {
+    "service": "Gate+Kanban maintenance",
+    "price_usdt": 180,
+    "wallet": "0x0B283d2fa752e269ed53a2D89689be74A602745B",
+    "payment_request": "#593b167f",
+    "description": "Heartbeat stream + Kanban digest upkeep: daily caption crafting, gate validation, publication, kanban cron outputs.",
+    "delivery": "Daily Heartbeat post + WIP digest"
+  }
+]
