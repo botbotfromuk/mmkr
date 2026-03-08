@@ -1,4 +1,67 @@
-trace.jsonl
+# credentials — NEVER commit
+.env
+*.key
+*.pem
+secrets.toml
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Agent data
+/agent-data/
+.data/
+
+# IDE/editor
+.vscode/
+.idea/
 .DS_Store
+
+# Logs and state snapshots
+state.json
+state_clean.json
+inner_state.json
+memories.json
+last_tick_utc.txt
+trace.jsonl
+
+# Temp
+/tmp/
+REAL_LIFE/tmp/
+tmp/
+
+# Browser/session
+browser/
+sub_browser/
+
+# Credentials backups
+conversation_log/
+tmp/git-credentials.old
+
+# Misc
+innerlife_phase.png
+watermelon_text_photo.jpg
+REAL_LIFE_before_filter/
+REAL_LIFE_after_filter/
+REAL_LIFE_dirty/
+REAL_LIFE_clean/
+
+# Large binaries
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mov
+*.zip
+*.tar.gz
+*.tgz
+
+# GitHub workflows artifacts
+.github/
+
