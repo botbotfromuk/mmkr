@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -8,7 +7,7 @@ from typing import Any
 
 from funcai.agents.tool import tool
 
-from .state import LifeContext
+from mmkr.state import LifeContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,7 +19,8 @@ class PersonalKanbanCron:
     wip_limits: dict[str, int] | None = None
 
     def _board_path(self) -> Path:
-        return self.storage_dir / f"{self.board_name.replace(' ', '_').lower()}.json"
+        sanitized = self.board_name.replace(" ", "_").lower()
+        return self.storage_dir / f"{sanitized}.json"
 
     def _load_board(self) -> dict[str, Any]:
         path = self._board_path()
@@ -47,19 +47,22 @@ class PersonalKanbanCron:
         import json
 
         board["updated_at"] = datetime.now(timezone.utc).isoformat()
-        path.write_text(json.dumps(board, indent=2, ensure_ascii=False), encoding="utf-8")
-
-    def _get_column(self, board: dict[str, Any], name: str) -> dict[str, Any]:
-        for col in board.get("columns", []):
-            if col.get("name") == name:
-                return col
-        column = {"name": name, "wip": self._wip_for(name), "tasks": []}
-        board.setdefault("columns", []).append(column)
-        return column
+        path.write_text(
+            json.dumps(board, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     def _wip_for(self, column: str) -> int:
-        limits = self.wip_limits or {}
+        limits = self.wip_limits or {"Today": 3, "In Progress": 2}
         return limits.get(column, 999)
+
+    def _get_column(self, board: dict[str, Any], name: str) -> dict[str, Any]:
+        for column in board.get("columns", []):
+            if column.get("name") == name:
+                return column
+        new_col = {"name": name, "wip": self._wip_for(name), "tasks": []}
+        board.setdefault("columns", []).append(new_col)
+        return new_col
 
     def _find_task(self, board: dict[str, Any], task_id: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         for column in board.get("columns", []):
@@ -73,13 +76,15 @@ class PersonalKanbanCron:
         storage_dir.mkdir(parents=True, exist_ok=True)
 
         def _enforce_wip(column: dict[str, Any]) -> tuple[bool, str]:
-            limit = column.get("wip", 999)
+            limit = column.get("wip", self._wip_for(column.get("name", "")))
             count = len(column.get("tasks", []))
             if count > limit:
-                return False, f"wip_exceeded:{column['name']}:{count}>{limit}"
+                return False, f"wip_exceeded:{column.get('name', '?')}:{count}>{limit}"
             return True, "ok"
 
-        @tool("Record or update a task in a kanban column.")
+        @tool(
+            "Record or update a task in a kanban column. Args: column (str, required), task_id (str, required), title (str, required), notes (str, default \"\"), owner (str, default \"botbotfromuk\")."
+        )
         def record_task(
             column: str,
             task_id: str,
@@ -91,7 +96,7 @@ class PersonalKanbanCron:
             col = self._get_column(board, column)
             _, existing = self._find_task(board, task_id)
             if existing:
-                existing.update({"title": title, "notes": notes, "owner": owner})
+                existing.update({"title": title, "notes": notes, "owner": owner, "status": column})
                 self._save_board(board)
                 return {"updated": True, "column": column, "wip_ok": True}
             col.setdefault("tasks", []).append(
@@ -107,7 +112,9 @@ class PersonalKanbanCron:
             self._save_board(board)
             return {"updated": False, "column": column, "wip_ok": wip_ok, "reason": reason}
 
-        @tool("Move a task to another column enforcing WIP limits.")
+        @tool(
+            "Move an existing task to another column. Args: task_id (str, required), target (str, required)."
+        )
         def move_task(task_id: str, target: str) -> dict[str, Any]:
             board = self._load_board()
             column, task = self._find_task(board, task_id)
@@ -143,11 +150,15 @@ class PersonalKanbanCron:
             lines.append(f"Updated: {board.get('updated_at', '')}")
             return "\n".join(lines)
 
-        @tool("Render kanban digest text with WIP warnings.")
+        @tool(
+            "Render kanban digest text with optional warnings. Args: tick (int, required), include_warnings (bool, default True)."
+        )
         def render_digest(tick: int, include_warnings: bool = True) -> dict[str, str]:
             return {"digest": _compose_digest(tick, include_warnings)}
 
-        @tool("Build curl payload for cron digest endpoint.")
+        @tool(
+            "Build curl payload for cron endpoint. Args: tick (int, required), endpoint (str, default 'http://localhost:7001/v1/kanban/digest')."
+        )
         def build_curl_payload(
             tick: int,
             endpoint: str = "http://localhost:7001/v1/kanban/digest",
